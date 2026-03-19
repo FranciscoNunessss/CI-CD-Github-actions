@@ -1,0 +1,44 @@
+name: CI-CD Hello World
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-build-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Validar mensagem do commit
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          echo "Mensagem recebida: $MSG"
+
+          if [[ ! "$MSG" =~ ^(feat|fix|docs|chore|ci):\ .+ ]]; then
+            echo "Erro: a mensagem do commit não cumpre o padrão definido."
+            echo "Exemplos válidos:"
+            echo "  feat: adiciona página hello world"
+            echo "  fix: corrige título"
+            echo "  ci: adiciona pipeline"
+            exit 1
+          fi
+
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Definir nome da imagem
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> $GITHUB_ENV
+
+      - name: Login no GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build da imagem Docker
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Publicar imagem no GitHub Packages
+        run: docker push $IMAGE_NAME
