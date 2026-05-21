@@ -28,7 +28,7 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout do código
+      - name: Checkout do código 
         uses: actions/checkout@v4
 
       - name: Definir nome da imagem
